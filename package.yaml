@@ -21,6 +21,10 @@ description:         Please see the README on GitHub at <https://github.com/HEIG
 
 dependencies:
 - base >= 4.7 && < 5
+- tasty
+- process
+- deepseq
+- async
 
 ghc-options:
 - -Wall
@@ -38,11 +42,16 @@ library:
 
 tests:
   tasty-process-test:
-    main:                Spec.hs
+    main:                Main.hs
     source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -F
+    - -pgmF=tasty-autocollect
+    build-tools:
+    - tasty-autocollect:tasty-autocollect
     dependencies:
     - tasty-process
+    - tasty-autocollect
