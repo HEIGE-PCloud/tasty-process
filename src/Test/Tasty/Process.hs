@@ -4,6 +4,8 @@
 
 module Test.Tasty.Process
   ( TestProcess (..)
+  , ExitCodeCheck
+  , OutputCheck
   , runTestProcess
   , ignoreOutput
   , ignoreExitCode
