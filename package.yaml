@@ -57,9 +57,18 @@ tests:
     - tasty-autocollect
 
 executables:
-  test-executable:
+  test-executable-simple:
     main:                Main.hs
-    source-dirs:         test/executable
+    source-dirs:         test/executables/simple
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - tasty-process
+  test-executable-echo:
+    main:                Main.hs
+    source-dirs:         test/executables/echo
     ghc-options:
     - -threaded
     - -rtsopts
