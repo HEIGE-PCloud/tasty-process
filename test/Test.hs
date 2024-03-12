@@ -7,4 +7,15 @@ module Test (
 
 import Test.Tasty.Process
 
--- test = undefined
+test = testProcess "Simple test" TestProcess
+  { program = "test-executable"
+  , arguments = []
+  , workingDir = Nothing
+  , environment = Nothing
+  , input = Nothing
+  , exitCodeCheck = ignoreExitCode
+  , stdoutCheck = \s -> if s == "Hello, World!\n" then Right () else Left "unexpected output"
+  , stderrCheck = ignoreOutput
+  , timeout = 1000000
+  }
+

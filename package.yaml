@@ -55,3 +55,14 @@ tests:
     dependencies:
     - tasty-process
     - tasty-autocollect
+
+executables:
+  test-executable:
+    main:                Main.hs
+    source-dirs:         test/executable
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - tasty-process

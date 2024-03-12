@@ -10,7 +10,9 @@ import GHC.IO.Handle (hClose, hFlush, hPutStr)
 import System.Exit (ExitCode)
 import System.IO (hGetContents)
 import System.Process (runInteractiveProcess, terminateProcess, waitForProcess)
-import Test.Tasty.Providers (IsTest (..), Result, testFailed, testPassed)
+import Test.Tasty.Providers (IsTest (..), Result, testFailed, testPassed, singleTest)
+import Test.Tasty (TestName)
+import Test.Tasty (TestTree)
 
 type ExitCodeCheck = ExitCode -> Either String ()
 type OutputCheck = String -> Either String ()
@@ -102,3 +104,6 @@ ignoreOutput _ = Right ()
 
 ignoreExitCode :: ExitCodeCheck
 ignoreExitCode _ = Right ()
+
+testProcess :: TestName -> TestProcess -> TestTree
+testProcess = singleTest
