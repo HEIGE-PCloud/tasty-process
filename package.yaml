@@ -1,7 +1,7 @@
 name:                tasty-process
 version:             0.1.0.0
 github:              "HEIGE-PCloud/tasty-process"
-license:             BSD-3-Clause
+license:             GPL-2.0
 author:              "PCloud"
 maintainer:          "heige.pcloud@outlook.com"
 copyright:           "(c) 2024 PCloud"

@@ -1,4 +1,4 @@
-cabal-version: 2.2
+cabal-version: 1.12
 
 -- This file has been generated from package.yaml by hpack version 0.36.0.
 --
@@ -12,7 +12,7 @@ bug-reports:    https://github.com/HEIGE-PCloud/tasty-process/issues
 author:         PCloud
 maintainer:     heige.pcloud@outlook.com
 copyright:      (c) 2024 PCloud
-license:        BSD-3-Clause
+license:        GPL-2.0
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
@@ -28,8 +28,6 @@ library
       Lib
   other-modules:
       Paths_tasty_process
-  autogen-modules:
-      Paths_tasty_process
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
@@ -41,8 +39,6 @@ test-suite tasty-process-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_tasty_process
-  autogen-modules:
       Paths_tasty_process
   hs-source-dirs:
       test
