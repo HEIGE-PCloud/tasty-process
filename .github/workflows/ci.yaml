@@ -10,6 +10,7 @@ jobs:
 
   build:
     name: GHC ${{ matrix.ghc-version }} on ${{ matrix.os }}
+    needs: fourmolu
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
