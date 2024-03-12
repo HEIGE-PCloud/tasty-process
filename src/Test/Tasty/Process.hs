@@ -6,10 +6,8 @@ module Test.Tasty.Process
   ( TestProcess (..)
   , ExitCodeCheck
   , OutputCheck
-  , runTestProcess
-  , ignoreOutput
-  , ignoreExitCode
-  , equals
+  , EqualCheck (..)
+  , IgnoreCheck (..)
   )
 where
 
@@ -102,12 +100,6 @@ exitFailure CreateProcess {cmdspec} code stderr stdout reason =
       ++ "\nreason:\n"
       ++ reason
 
-ignoreOutput :: OutputCheck
-ignoreOutput _ = Right ()
-
-ignoreExitCode :: ExitCodeCheck
-ignoreExitCode _ = Right ()
-
 class (Show a, Eq a) => EqualCheck a where
   equals :: a -> a -> Either String ()
   equals expected actual
@@ -118,3 +110,11 @@ class (Show a, Eq a) => EqualCheck a where
 instance EqualCheck String
 
 instance EqualCheck ExitCode
+
+class IgnoreCheck a where
+  ignored :: a -> Either String ()
+  ignored _ = Right ()
+
+instance IgnoreCheck String
+
+instance IgnoreCheck ExitCode

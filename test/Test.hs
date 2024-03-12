@@ -24,7 +24,7 @@ test =
             , std_in = CreatePipe
             }
       , input = Nothing
-      , exitCodeCheck = ignoreExitCode
+      , exitCodeCheck = ignored
       , stdoutCheck = equals "Hello, world!\n"
       , stderrCheck = ignoreOutput
       , timeout = 1 * second
@@ -41,7 +41,7 @@ test =
             , std_in = CreatePipe
             }
       , input = Just "Echo!"
-      , exitCodeCheck = ignoreExitCode
+      , exitCodeCheck = ignored
       , stdoutCheck = equals "Echo!"
       , stderrCheck = ignoreOutput
       , timeout = 1 * second
