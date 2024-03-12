@@ -2,13 +2,14 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Test.Tasty.Process (
-  TestProcess (..),
-  runTestProcess,
-  ignoreOutput,
-  ignoreExitCode,
-  equals,
-) where
+module Test.Tasty.Process
+  ( TestProcess (..)
+  , runTestProcess
+  , ignoreOutput
+  , ignoreExitCode
+  , equals
+  )
+where
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race)
@@ -17,11 +18,17 @@ import Data.Foldable (for_)
 import Data.Maybe (fromMaybe)
 import GHC.IO.Handle (hClose, hFlush, hPutStr)
 import System.Exit (ExitCode)
-import System.IO (Handle, hGetContents)
-import System.Process (CreateProcess (CreateProcess, cmdspec), createProcess, terminateProcess, waitForProcess)
+import System.IO (hGetContents)
+import System.Process
+  ( CreateProcess (CreateProcess, cmdspec)
+  , createProcess
+  , terminateProcess
+  , waitForProcess
+  )
 import Test.Tasty.Providers (IsTest (..), Result, testFailed, testPassed)
 
 type ExitCodeCheck = ExitCode -> Either String ()
+
 type OutputCheck = String -> Either String ()
 
 data TestProcess = TestProcess
@@ -78,9 +85,9 @@ runTestProcess
             | otherwise = testPassed ""
         return res
 
-exitFailure ::
-  CreateProcess -> ExitCode -> String -> String -> String -> Result
-exitFailure CreateProcess{cmdspec} code stderr stdout reason =
+exitFailure
+  :: CreateProcess -> ExitCode -> String -> String -> String -> Result
+exitFailure CreateProcess {cmdspec} code stderr stdout reason =
   testFailed $
     "process "
       ++ show cmdspec
@@ -103,7 +110,8 @@ class (Show a, Eq a) => EqualCheck a where
   equals :: a -> a -> Either String ()
   equals expected actual
     | expected == actual = Right ()
-    | otherwise = Left $ "expected: " ++ show expected ++ "\nactual: " ++ show actual
+    | otherwise =
+        Left $ "expected: " ++ show expected ++ "\nactual: " ++ show actual
 
 instance EqualCheck String
 

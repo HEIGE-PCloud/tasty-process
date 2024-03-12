@@ -1,9 +1,10 @@
 {- AUTOCOLLECT.TEST -}
 
-module Test (
-{- AUTOCOLLECT.TEST.export -}
-
-) where
+module Test
+  (
+  {- AUTOCOLLECT.TEST.export -}
+  )
+where
 
 import System.Process (CreateProcess (..), StdStream (CreatePipe), proc)
 import Test.Tasty.Process
