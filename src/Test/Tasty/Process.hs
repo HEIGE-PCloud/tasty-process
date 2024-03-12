@@ -1,28 +1,31 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
-module Test.Tasty.Process where
+module Test.Tasty.Process (
+  TestProcess (..),
+  runTestProcess,
+  ignoreOutput,
+  ignoreExitCode,
+  equals,
+) where
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race)
 import Control.DeepSeq (deepseq)
 import Data.Foldable (for_)
+import Data.Maybe (fromMaybe)
 import GHC.IO.Handle (hClose, hFlush, hPutStr)
 import System.Exit (ExitCode)
-import System.IO (hGetContents)
-import System.Process (runInteractiveProcess, terminateProcess, waitForProcess)
-import Test.Tasty.Providers (IsTest (..), Result, testFailed, testPassed, singleTest)
-import Test.Tasty (TestName)
-import Test.Tasty (TestTree)
+import System.IO (Handle, hGetContents)
+import System.Process (CreateProcess (CreateProcess, cmdspec), createProcess, terminateProcess, waitForProcess)
+import Test.Tasty.Providers (IsTest (..), Result, testFailed, testPassed)
 
 type ExitCodeCheck = ExitCode -> Either String ()
 type OutputCheck = String -> Either String ()
 
-data TestProcess
-  = TestProcess
-  { program :: String
-  , arguments :: [String]
-  , workingDir :: Maybe FilePath
-  , environment :: Maybe [(String, String)]
+data TestProcess = TestProcess
+  { process :: CreateProcess
   , input :: Maybe String
   , exitCodeCheck :: ExitCodeCheck
   , stdoutCheck :: OutputCheck
@@ -38,37 +41,33 @@ instance IsTest TestProcess where
 runTestProcess :: TestProcess -> IO Result
 runTestProcess
   TestProcess
-    { program
-    , arguments
-    , workingDir
-    , environment
+    { process
     , input
     , exitCodeCheck
     , stdoutCheck
     , stderrCheck
     , timeout
     } = do
-    (stdinH, stdoutH, stderrH, pid) <- runInteractiveProcess program arguments workingDir environment
-    -- Write input to the process
+    (mbStdinH, mbStdoutH, mbStderrH, ph) <- createProcess process
     for_ input $ \i -> do
-      hPutStr stdinH i
-      hFlush stdinH
-      hClose stdinH
+      mapM_ (`hPutStr` i) mbStdinH
+      mapM_ hFlush mbStdinH
+      mapM_ hClose mbStdinH
     let
       processAction = do
-        stderr <- hGetContents stderrH
-        stdout <- hGetContents stdoutH
-        ecode <- stderr `deepseq` stdout `deepseq` waitForProcess pid
-        return (ecode, stderr, stdout)
+        stdout :: String <- fromMaybe "" <$> mapM hGetContents mbStdoutH
+        stderr :: String <- fromMaybe "" <$> mapM hGetContents mbStderrH
+        exitCode :: ExitCode <- stderr `deepseq` stdout `deepseq` waitForProcess ph
+        return (exitCode, stderr, stdout)
     result <- race (threadDelay timeout) processAction
     case result of
       Left () -> do
-        terminateProcess pid
-        ecode <- waitForProcess pid
-        return $ exitFailure program arguments ecode "" "" "program timeout"
-      Right (ecode, stderr, stdout) -> do
-        let exitFailure' = exitFailure program arguments ecode stderr stdout
-        let exitCodeCheckResult = exitCodeCheck ecode
+        terminateProcess ph
+        exitCode <- waitForProcess ph
+        return $ exitFailure process exitCode "" "" "process timeout"
+      Right (exitCode, stderr, stdout) -> do
+        let exitFailure' = exitFailure process exitCode stderr stdout
+        let exitCodeCheckResult = exitCodeCheck exitCode
         let stderrCheckResult = stderrCheck stderr
         let stdoutCheckResult = stdoutCheck stdout
         let
@@ -76,20 +75,15 @@ runTestProcess
             | Left reason <- exitCodeCheckResult = exitFailure' reason
             | Left reason <- stderrCheckResult = exitFailure' reason
             | Left reason <- stdoutCheckResult = exitFailure' reason
-            -- \| ecode /= exitCode =
-            --     exitFailure'
-            --       ("unexpected exit code " ++ show ecode ++ " expected " ++ show exitCode)
-            -- \| not stderrCorrect = exitFailure' ("stderr is incorrect\n" ++ stderrReason)
-            -- \| not stdoutCorrect = exitFailure' ("stdout is incorrect\n" ++ stdoutReason)
             | otherwise = testPassed ""
         return res
 
 exitFailure ::
-  String -> [String] -> ExitCode -> String -> String -> String -> Result
-exitFailure file arguments code stderr stdout reason =
+  CreateProcess -> ExitCode -> String -> String -> String -> Result
+exitFailure CreateProcess{cmdspec} code stderr stdout reason =
   testFailed $
-    "program "
-      ++ unwords (file : arguments)
+    "process "
+      ++ show cmdspec
       ++ " failed with code "
       ++ show code
       ++ "\nstderr was:\n"
@@ -105,5 +99,12 @@ ignoreOutput _ = Right ()
 ignoreExitCode :: ExitCodeCheck
 ignoreExitCode _ = Right ()
 
-testProcess :: TestName -> TestProcess -> TestTree
-testProcess = singleTest
+class (Show a, Eq a) => EqualCheck a where
+  equals :: a -> a -> Either String ()
+  equals expected actual
+    | expected == actual = Right ()
+    | otherwise = Left $ "expected: " ++ show expected ++ "\nactual: " ++ show actual
+
+instance EqualCheck String
+
+instance EqualCheck ExitCode

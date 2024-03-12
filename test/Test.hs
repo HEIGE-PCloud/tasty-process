@@ -5,34 +5,43 @@ module Test (
 
 ) where
 
+import System.Process (CreateProcess (..), StdStream (CreatePipe), proc)
 import Test.Tasty.Process
+import Test.Tasty.Providers (singleTest)
+
+second :: Int
+second = 1000000
 
 test =
-  testProcess
+  singleTest
     "Simple test"
     TestProcess
-      { program = "test-executable-simple"
-      , arguments = []
-      , workingDir = Nothing
-      , environment = Nothing
+      { process =
+          (proc "test-executable-simple" [])
+            { std_out = CreatePipe
+            , std_err = CreatePipe
+            , std_in = CreatePipe
+            }
       , input = Nothing
       , exitCodeCheck = ignoreExitCode
-      , stdoutCheck = \s -> if s == "Hello, World!\n" then Right () else Left "unexpected output"
+      , stdoutCheck = equals "Hello, world!\n"
       , stderrCheck = ignoreOutput
-      , timeout = 1000000
+      , timeout = 1 * second
       }
 
 test =
-  testProcess
+  singleTest
     "Echo test"
     TestProcess
-      { program = "test-executable-echo"
-      , arguments = []
-      , workingDir = Nothing
-      , environment = Nothing
+      { process =
+          (proc "test-executable-echo" [])
+            { std_out = CreatePipe
+            , std_err = CreatePipe
+            , std_in = CreatePipe
+            }
       , input = Just "Echo!"
       , exitCodeCheck = ignoreExitCode
-      , stdoutCheck = \s -> if s == "Echo!" then Right () else Left "unexpected output"
+      , stdoutCheck = equals "Echo!"
       , stderrCheck = ignoreOutput
-      , timeout = 1000000
+      , timeout = 1 * second
       }
