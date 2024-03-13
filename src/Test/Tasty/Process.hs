@@ -9,6 +9,7 @@ module Test.Tasty.Process
   , EqualCheck (..)
   , IgnoreCheck (..)
   , processTest
+  , setTimeout
   )
 where
 
@@ -25,7 +26,7 @@ import System.Process
   , createProcess
   , waitForProcess
   )
-import Test.Tasty (TestName, TestTree, withResource)
+import Test.Tasty (TestName, TestTree, adjustOption, mkTimeout, withResource)
 import Test.Tasty.Providers
   ( IsTest (..)
   , Result
@@ -46,69 +47,30 @@ data TestProcess = TestProcess
   , stderrCheck :: OutputCheck
   }
 
-instance IsTest TestProcess where
-  run _ p _ = runTestProcess p
-
-  testOptions = return []
-
 instance
   IsTest
     (TestProcess, IO (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle))
   where
-  run
-    _
-    ( TestProcess
-        { process
-        , exitCodeCheck
-        , stdoutCheck
-        , stderrCheck
-        }
-      , io
-      )
-    _ = do
-      (_, mbStdoutH, mbStderrH, ph) <- io
-      stdout :: String <- fromMaybe "" <$> mapM hGetContents mbStdoutH
-      stderr :: String <- fromMaybe "" <$> mapM hGetContents mbStderrH
-      exitCode :: ExitCode <- stderr `deepseq` stdout `deepseq` waitForProcess ph
-      let exitFailure' = exitFailure process exitCode stderr stdout
-      let exitCodeCheckResult = exitCodeCheck exitCode
-      let stderrCheckResult = stderrCheck stderr
-      let stdoutCheckResult = stdoutCheck stdout
-      let res
-            | Left reason <- exitCodeCheckResult = exitFailure' reason
-            | Left reason <- stderrCheckResult = exitFailure' reason
-            | Left reason <- stdoutCheckResult = exitFailure' reason
-            | otherwise = testPassed ""
-      return res
+  run _ (tp, io) _ = runTestProcess tp io
 
   testOptions = return []
 
 processTest
   :: TestName
   -> TestProcess
-  -- -> IO (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle)
-  -- -> ((Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle) -> IO ())
-  -- -> (IO (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle) -> TestTree)
   -> TestTree
 processTest
   testName
-  tp =
+  tp@TestProcess {process} =
     withResource
-      (createResource tp)
+      (createProcess process)
       cleanupProcess
-      (\a -> singleTest testName (tp, a))
+      (\io -> singleTest testName (tp, io))
 
-createResource
-  :: TestProcess -> IO (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle)
-createResource TestProcess {process, input} = do
-  r@(mbStdinH, mbStdoutH, mbStderrH, ph) <- createProcess process
-  for_ input $ \i -> do
-    mapM_ (`hPutStr` i) mbStdinH
-    mapM_ hFlush mbStdinH
-    mapM_ hClose mbStdinH
-  return r
-
-runTestProcess :: TestProcess -> IO Result
+runTestProcess
+  :: TestProcess
+  -> IO (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle)
+  -> IO Result
 runTestProcess
   TestProcess
     { process
@@ -116,8 +78,9 @@ runTestProcess
     , exitCodeCheck
     , stdoutCheck
     , stderrCheck
-    } = do
-    (mbStdinH, mbStdoutH, mbStderrH, ph) <- createProcess process
+    }
+  io = do
+    (mbStdinH, mbStdoutH, mbStderrH, ph) <- io
     for_ input $ \i -> do
       mapM_ (`hPutStr` i) mbStdinH
       mapM_ hFlush mbStdinH
@@ -150,6 +113,9 @@ exitFailure CreateProcess {cmdspec} code stderr stdout reason =
       ++ stdout
       ++ "\nreason:\n"
       ++ reason
+
+setTimeout :: Integer -> TestTree -> TestTree
+setTimeout x = adjustOption (const (mkTimeout x))
 
 class (Show a, Eq a) => EqualCheck a where
   equals :: a -> a -> Either String ()
