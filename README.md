@@ -5,10 +5,10 @@
 Features:
 
 - Run an external process as a test case
-- Supply custom input to `stdin`
-- Check `exitcode`, `stdout` and `stderr`
-- Set timeout using Tasty's `Timeout` option
-- Automatic clean up after the test
+- Supply input to `stdin`
+- Test the process' `exitcode`, `stdout` and `stderr`
+- Set timeout for the running process using Tasty's `Timeout` option
+- Automatic clean up the process after the test
 
 ## Example
 
