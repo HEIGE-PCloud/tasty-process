@@ -5,14 +5,14 @@
 module Test.Tasty.Process
   ( processTest
   , TestProcess (..)
-  , ExitCodeCheck
-  , OutputCheck
-  , EqualCheck (..)
-  , IgnoreCheck (..)
-  , setTimeout
   , proc
   , shell
   , defaultProcess
+  , ExitCodeCheck
+  , OutputCheck
+  , equals
+  , ignored
+  , setTimeout
   )
 where
 
@@ -47,16 +47,16 @@ the function to create a test.
 @
 exampleTest :: TestTree
 exampleTest =
-  setTimeout (1 * second) $
+  setTimeout (1000000) $
     processTest
       "Simple test"
       TestProcess
         { process =
           (proc "test-executable-simple" [])
         , input = Nothing
-        , exitCodeCheck = ignored
+        , exitCodeCheck = equals ExitSuccess
         , stdoutCheck = equals "Hello, world!\n"
-        , stderrCheck = ignored
+        , stderrCheck = equals ""
         }
 @
 -}
@@ -72,12 +72,12 @@ processTest
       cleanupProcess
       (\io -> singleTest testName (tp, io))
 
-{- | 'ExitCodeCheck' is a function that given the 'ExitCode' of a process,
+{- | 'ExitCodeCheck' represents a function that given the 'ExitCode' of a process,
 returns '()' if the exit code is expected, or a reason otherwise.
 -}
 type ExitCodeCheck = ExitCode -> Either String ()
 
-{- | 'OutputCheck' is a function that given the output of a process,
+{- | 'OutputCheck' represents a function that given the output of a process,
 returns '()' if the output is expected, or a reason otherwise.
 -}
 type OutputCheck = String -> Either String ()
@@ -95,6 +95,17 @@ data TestProcess = TestProcess
   , stderrCheck :: OutputCheck
   -- ^ The check to be performed on the @stderr@ of the process.
   }
+
+-- | The template process configuration.
+defaultProcess :: TestProcess
+defaultProcess =
+  TestProcess
+    { process = undefined
+    , input = Nothing
+    , exitCodeCheck = ignored
+    , stdoutCheck = ignored
+    , stderrCheck = ignored
+    }
 
 instance
   IsTest
@@ -118,13 +129,16 @@ runTestProcess
     }
   io = do
     (mbStdinH, mbStdoutH, mbStderrH, ph) <- io
+    -- Send input to the process.
     for_ input $ \i -> do
       mapM_ (`hPutStr` i) mbStdinH
       mapM_ hFlush mbStdinH
       mapM_ hClose mbStdinH
+    -- Wait for the process to finish and get the exit code, stdout and stderr.
     stdout :: String <- fromMaybe "" <$> mapM hGetContents mbStdoutH
     stderr :: String <- fromMaybe "" <$> mapM hGetContents mbStderrH
     exitCode :: ExitCode <- stderr `deepseq` stdout `deepseq` waitForProcess ph
+    -- Check the exit code, stdout and stderr.
     let exitFailure' = exitFailure process exitCode stderr stdout
     let exitCodeCheckResult = exitCodeCheck exitCode
     let stderrCheckResult = stderrCheck stderr
@@ -172,11 +186,21 @@ printCmdSpec :: CmdSpec -> String
 printCmdSpec (ShellCommand x) = x
 printCmdSpec (RawCommand x y) = unwords (x : y)
 
--- | Set the timeout for a 'TestTree'.
+-- | Set the timeout (in microseconds) for a 'TestTree'.
 setTimeout :: Integer -> TestTree -> TestTree
 setTimeout = localOption . mkTimeout
 
 class (Show a, Eq a) => EqualCheck a where
+  -- | A helper function for creating equality checks.
+  --
+  -- >>> equals "str" "str"
+  -- Right ()
+  --
+  -- >>> equals ExitSuccess ExitSuccess
+  -- Right ()
+  --
+  -- >>> equals "expected value" "actual value"
+  -- Left "expected : \"expected value\"\nactual   : \"actual value\"\n"
   equals :: a -> a -> Either String ()
   equals expected actual
     | expected == actual = Right ()
@@ -188,6 +212,10 @@ instance EqualCheck String
 instance EqualCheck ExitCode
 
 class IgnoreCheck a where
+  -- | A helper function to ignore checks.
+  --
+  -- >>> ignored "any value"
+  -- Right ()
   ignored :: a -> Either String ()
   ignored _ = Right ()
 
@@ -195,21 +223,18 @@ instance IgnoreCheck String
 
 instance IgnoreCheck ExitCode
 
--- | Re-export of 'proc' from "System.Process" for more convenient default values.
+{- | Re-export of 'proc' from "System.Process" with correct default values.
+
+Construct a `CreateProcess` record for passing to `createProcess`, representing a command to be passed to the shell.
+-}
 proc :: FilePath -> [String] -> CreateProcess
 proc x y =
   (P.proc x y) {std_out = CreatePipe, std_err = CreatePipe, std_in = CreatePipe}
 
--- | Re-export of 'shell' from "System.Process" for more convenient default values.
+{- | Re-export of 'shell' from "System.Process" with correct default values.
+
+Construct a `CreateProcess` record for passing to `createProcess`, representing a raw command with arguments.
+See `RawCommand` for precise semantics of the specified `FilePath`.
+-}
 shell :: String -> CreateProcess
 shell x = (P.shell x) {std_out = CreatePipe, std_err = CreatePipe, std_in = CreatePipe}
-
-defaultProcess :: TestProcess
-defaultProcess =
-  TestProcess
-    { process = undefined
-    , input = Nothing
-    , exitCodeCheck = ignored
-    , stdoutCheck = ignored
-    , stderrCheck = ignored
-    }
