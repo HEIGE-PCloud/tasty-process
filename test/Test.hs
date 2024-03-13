@@ -1,6 +1,6 @@
 module Test (allTests) where
 
-import System.Process (CreateProcess (..), StdStream (CreatePipe), proc)
+import System.Exit (ExitCode (ExitFailure))
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.ExpectedFailure (expectFailBecause)
 import Test.Tasty.Process
@@ -13,17 +13,9 @@ simpleTest =
   setTimeout (1 * second) $
     processTest
       "Simple test"
-      TestProcess
-        { process =
-            (proc "test-executable-simple" [])
-              { std_out = CreatePipe
-              , std_err = CreatePipe
-              , std_in = CreatePipe
-              }
-        , input = Nothing
-        , exitCodeCheck = ignored
+      defaultProcess
+        { process = proc "test-executable-simple" []
         , stdoutCheck = equals "Hello, world!\n"
-        , stderrCheck = ignored
         }
 
 echoTest :: TestTree
@@ -31,17 +23,40 @@ echoTest =
   setTimeout (1 * second) $
     processTest
       "Echo test"
-      TestProcess
-        { process =
-            (proc "test-executable-echo" [])
-              { std_out = CreatePipe
-              , std_err = CreatePipe
-              , std_in = CreatePipe
-              }
+      defaultProcess
+        { process = proc "test-executable-echo" []
         , input = Just "Echo!"
-        , exitCodeCheck = ignored
         , stdoutCheck = equals "Echo!"
-        , stderrCheck = ignored
+        }
+
+failedEchoTest :: TestTree
+failedEchoTest =
+  expectFailBecause "Expected '!ochE', but get 'Echo!'" $
+    processTest
+      "Failed echo test"
+      defaultProcess
+        { process = proc "test-executable-echo" []
+        , input = Just "Echo!"
+        , stdoutCheck = equals "!ochE"
+        }
+
+exitCodeTest :: TestTree
+exitCodeTest =
+  processTest
+    "Exit code test"
+    defaultProcess
+      { process = proc "test-executable-exitcode" []
+      , exitCodeCheck = equals (ExitFailure 123)
+      }
+
+failedExitCodeTest :: TestTree
+failedExitCodeTest =
+  expectFailBecause "Expected exit code 321, but get 123" $
+    processTest
+      "Failed exit code test"
+      defaultProcess
+        { process = proc "test-executable-exitcode" []
+        , exitCodeCheck = equals (ExitFailure 321)
         }
 
 timeoutTest :: TestTree
@@ -49,19 +64,19 @@ timeoutTest =
   expectFailBecause "Should timeout after 1s" $
     setTimeout (1 * second) $
       processTest
-        "Infinite loop test"
-        TestProcess
-          { process =
-              (proc "test-executable-sleep" [])
-                { std_out = CreatePipe
-                , std_err = CreatePipe
-                , std_in = CreatePipe
-                }
-          , input = Nothing
-          , exitCodeCheck = ignored
-          , stdoutCheck = ignored
-          , stderrCheck = ignored
+        "Timeout test"
+        defaultProcess
+          { process = proc "test-executable-sleep" []
           }
 
 allTests :: TestTree
-allTests = testGroup "Test" [simpleTest, echoTest, timeoutTest]
+allTests =
+  testGroup
+    "Test"
+    [ simpleTest
+    , echoTest
+    , failedEchoTest
+    , exitCodeTest
+    , failedExitCodeTest
+    , timeoutTest
+    ]
