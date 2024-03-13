@@ -170,7 +170,7 @@ class (Show a, Eq a) => EqualCheck a where
   equals expected actual
     | expected == actual = Right ()
     | otherwise =
-        Left $ "expected: " ++ show expected ++ "\nactual: " ++ show actual
+        Left $ "expected : " ++ show expected ++ "\nactual   : " ++ show actual
 
 instance EqualCheck String
 
