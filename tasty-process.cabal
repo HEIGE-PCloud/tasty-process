@@ -6,13 +6,15 @@ cabal-version: 1.12
 
 name:           tasty-process
 version:        0.1.0.0
+synopsis:       Use Tasty to test execution of external processes
 description:    Please see the README on GitHub at <https://github.com/HEIGE-PCloud/tasty-process#readme>
+category:       Testing
 homepage:       https://github.com/HEIGE-PCloud/tasty-process#readme
 bug-reports:    https://github.com/HEIGE-PCloud/tasty-process/issues
 author:         PCloud
 maintainer:     heige.pcloud@outlook.com
 copyright:      (c) 2024 PCloud
-license:        GPL-2.0
+license:        GPL-2
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
