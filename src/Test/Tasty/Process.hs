@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Test.Tasty.Process
   ( processTest
@@ -144,8 +145,7 @@ runTestProcess
     let stderrCheckResult = stderrCheck stderr
     let stdoutCheckResult = stdoutCheck stdout
     let handleNotes =
-          "Note:\n"
-            ++ printHandleNote mbStdinH "stdin"
+          printHandleNote mbStdinH "stdin"
             ++ printHandleNote mbStdoutH "stdout"
             ++ printHandleNote mbStderrH "stderr"
     let res
@@ -190,38 +190,30 @@ printCmdSpec (RawCommand x y) = unwords (x : y)
 setTimeout :: Integer -> TestTree -> TestTree
 setTimeout = localOption . mkTimeout
 
-class (Show a, Eq a) => EqualCheck a where
-  -- | A helper function for creating equality checks.
-  --
-  -- >>> equals "str" "str"
-  -- Right ()
-  --
-  -- >>> equals ExitSuccess ExitSuccess
-  -- Right ()
-  --
-  -- >>> equals "expected value" "actual value"
-  -- Left "expected : \"expected value\"\nactual   : \"actual value\"\n"
-  equals :: a -> a -> Either String ()
-  equals expected actual
-    | expected == actual = Right ()
-    | otherwise =
-        Left $ "expected : " ++ show expected ++ "\nactual   : " ++ show actual ++ "\n"
+{- | A helper function for creating equality checks.
 
-instance EqualCheck String
+>>> equals "str" "str"
+Right ()
 
-instance EqualCheck ExitCode
+>>> equals ExitSuccess ExitSuccess
+Right ()
 
-class IgnoreCheck a where
-  -- | A helper function to ignore checks.
-  --
-  -- >>> ignored "any value"
-  -- Right ()
-  ignored :: a -> Either String ()
-  ignored _ = Right ()
+>>> equals "expected value" "actual value"
+Left "expected : \"expected value\"\nactual   : \"actual value\"\n"
+-}
+equals :: (Show a, Eq a) => a -> a -> Either String ()
+equals expected actual
+  | expected == actual = Right ()
+  | otherwise =
+      Left $ "expected : " ++ show expected ++ "\nactual   : " ++ show actual ++ "\n"
 
-instance IgnoreCheck String
+{- | A helper function to ignore checks.
 
-instance IgnoreCheck ExitCode
+>>> ignored "any value"
+Right ()
+-}
+ignored :: a -> Either String ()
+ignored _ = Right ()
 
 {- | Re-export of 'proc' from "System.Process" with correct default values.
 
