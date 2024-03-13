@@ -66,6 +66,9 @@ jobs:
           enable-stack: true
           stack-version: "latest"
 
+      - name: Prepare dependencies
+        run: cabal update
+
       - name: Haddock
         run: cabal haddock tasty-process --enable-doc --haddock-hyperlink-source --haddock-quickjump --haddock-html-location='https://hackage.haskell.org/package/$pkg-$version/docs'
 
