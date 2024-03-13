@@ -28,6 +28,15 @@ jobs:
           enable-stack: true
           stack-version: "latest"
 
+      - name: Cache dependencies
+        id: cache-dependencies
+        uses: actions/cache@v4
+        env:
+          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-stack-${{ steps.setup.outputs.stack-version }}
+        with:
+          path: ${{ steps.setup.outputs.stack-root }}
+          key: ${{ env.key }}-${{ hashFiles('tasty-process.cabal') }}
+
       - name: Build
         run: stack build --test --no-run-tests --compiler ghc-${{ matrix.ghc-version }}
 
@@ -56,6 +65,9 @@ jobs:
           ghc-version: "9.4"
           enable-stack: true
           stack-version: "latest"
+
+      - name: Prepare dependencies
+        run: cabal update
 
       - name: Haddock
         run: cabal haddock tasty-process --enable-doc --haddock-hyperlink-source --haddock-quickjump --haddock-html-location='https://hackage.haskell.org/package/$pkg-$version/docs'
