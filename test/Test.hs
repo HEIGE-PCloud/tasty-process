@@ -8,13 +8,9 @@ where
 
 import System.Process (CreateProcess (..), StdStream (CreatePipe), proc)
 import Test.Tasty.Process
-import Test.Tasty.Providers (singleTest)
-
-second :: Int
-second = 1000000
 
 test =
-  singleTest
+  processTest
     "Simple test"
     TestProcess
       { process =
@@ -26,12 +22,11 @@ test =
       , input = Nothing
       , exitCodeCheck = ignored
       , stdoutCheck = equals "Hello, world!\n"
-      , stderrCheck = ignoreOutput
-      , timeout = 1 * second
+      , stderrCheck = ignored
       }
 
 test =
-  singleTest
+  processTest
     "Echo test"
     TestProcess
       { process =
@@ -43,6 +38,5 @@ test =
       , input = Just "Echo!"
       , exitCodeCheck = ignored
       , stdoutCheck = equals "Echo!"
-      , stderrCheck = ignoreOutput
-      , timeout = 1 * second
+      , stderrCheck = ignored
       }
