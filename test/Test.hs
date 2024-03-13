@@ -45,3 +45,20 @@ test =
         , stdoutCheck = equals "Echo!"
         , stderrCheck = ignored
         }
+
+test_expectFailBecause "Should timeout after 1 second" =
+  setTimeout (1 * second) $
+    processTest
+      "Infinite loop test"
+      TestProcess
+        { process =
+            (proc "test-executable-sleep" [])
+              { std_out = CreatePipe
+              , std_err = CreatePipe
+              , std_in = CreatePipe
+              }
+        , input = Nothing
+        , exitCodeCheck = ignored
+        , stdoutCheck = ignored
+        , stderrCheck = ignored
+        }
