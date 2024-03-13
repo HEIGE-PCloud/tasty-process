@@ -23,7 +23,8 @@ import GHC.IO.Handle (Handle, hClose, hFlush, hPutStr)
 import System.Exit (ExitCode)
 import System.IO (hGetContents)
 import System.Process
-  ( CreateProcess (..)
+  ( CmdSpec (..)
+  , CreateProcess (..)
   , ProcessHandle
   , StdStream (..)
   , cleanupProcess
@@ -129,9 +130,12 @@ runTestProcess
     let stderrCheckResult = stderrCheck stderr
     let stdoutCheckResult = stdoutCheck stdout
     let res
-          | Left reason <- exitCodeCheckResult = exitFailure' reason
-          | Left reason <- stderrCheckResult = exitFailure' reason
-          | Left reason <- stdoutCheckResult = exitFailure' reason
+          | Left reason <- exitCodeCheckResult =
+              exitFailure' ("ExitCode check failed.\n" ++ reason)
+          | Left reason <- stdoutCheckResult =
+              exitFailure' ("Stdout check failed.\n" ++ reason)
+          | Left reason <- stderrCheckResult =
+              exitFailure' ("Stderr check failed.\n" ++ reason)
           | otherwise = testPassed ""
     return res
 
@@ -139,16 +143,23 @@ exitFailure
   :: CreateProcess -> ExitCode -> String -> String -> String -> Result
 exitFailure CreateProcess {cmdspec} code stderr stdout reason =
   testFailed $
-    "process "
-      ++ show cmdspec
-      ++ " failed with code "
-      ++ show code
-      ++ "\nstderr was:\n"
-      ++ stderr
-      ++ "\nstdout was:\n"
-      ++ stdout
-      ++ "\nreason:\n"
-      ++ reason
+    unlines
+      [ printCmdSpec cmdspec ++ " exited with code " ++ show code
+      , ""
+      , if null stdout
+          then "Nothing was printed to stdout."
+          else "stdout contained:\n" ++ stdout
+      , ""
+      , if null stderr
+          then "Nothing was printed to stderr."
+          else "stderr contained:\n" ++ stderr
+      , ""
+      , reason
+      ]
+
+printCmdSpec :: CmdSpec -> String
+printCmdSpec (ShellCommand x) = x
+printCmdSpec (RawCommand x y) = unwords (x : y)
 
 -- | Set the timeout for a 'TestTree'.
 setTimeout :: Integer -> TestTree -> TestTree
