@@ -129,15 +129,26 @@ runTestProcess
     let exitCodeCheckResult = exitCodeCheck exitCode
     let stderrCheckResult = stderrCheck stderr
     let stdoutCheckResult = stdoutCheck stdout
+    let handleNotes =
+          "Note:\n"
+            ++ printHandleNote mbStdinH "stdin"
+            ++ printHandleNote mbStdoutH "stdout"
+            ++ printHandleNote mbStderrH "stderr"
     let res
           | Left reason <- exitCodeCheckResult =
-              exitFailure' ("ExitCode check failed.\n" ++ reason)
+              exitFailure' ("ExitCode check failed.\n" ++ reason ++ handleNotes)
           | Left reason <- stdoutCheckResult =
-              exitFailure' ("Stdout check failed.\n" ++ reason)
+              exitFailure' ("Stdout check failed.\n" ++ reason ++ handleNotes)
           | Left reason <- stderrCheckResult =
-              exitFailure' ("Stderr check failed.\n" ++ reason)
+              exitFailure' ("Stderr check failed.\n" ++ reason ++ handleNotes)
           | otherwise = testPassed ""
     return res
+
+printHandleNote :: Maybe a -> String -> String
+printHandleNote (Just _) _ = ""
+printHandleNote Nothing hName =
+  hName
+    ++ " was not captured because it is not set to `CreatePipe` in `CreateProcess`.\n"
 
 exitFailure
   :: CreateProcess -> ExitCode -> String -> String -> String -> Result
@@ -170,7 +181,7 @@ class (Show a, Eq a) => EqualCheck a where
   equals expected actual
     | expected == actual = Right ()
     | otherwise =
-        Left $ "expected : " ++ show expected ++ "\nactual   : " ++ show actual
+        Left $ "expected : " ++ show expected ++ "\nactual   : " ++ show actual ++ "\n"
 
 instance EqualCheck String
 
