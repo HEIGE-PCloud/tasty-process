@@ -3,13 +3,15 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Test.Tasty.Process
-  ( TestProcess (..)
+  ( processTest
+  , TestProcess (..)
   , ExitCodeCheck
   , OutputCheck
   , EqualCheck (..)
   , IgnoreCheck (..)
-  , processTest
   , setTimeout
+  , proc
+  , shell
   )
 where
 
@@ -20,13 +22,15 @@ import GHC.IO.Handle (Handle, hClose, hFlush, hPutStr)
 import System.Exit (ExitCode)
 import System.IO (hGetContents)
 import System.Process
-  ( CreateProcess (CreateProcess, cmdspec)
+  ( CreateProcess (..)
   , ProcessHandle
+  , StdStream (..)
   , cleanupProcess
   , createProcess
   , waitForProcess
   )
-import Test.Tasty (TestName, TestTree, adjustOption, mkTimeout, withResource)
+import qualified System.Process as P (proc, shell)
+import Test.Tasty (TestName, TestTree, localOption, mkTimeout, withResource)
 import Test.Tasty.Providers
   ( IsTest (..)
   , Result
@@ -35,26 +39,25 @@ import Test.Tasty.Providers
   , testPassed
   )
 
-type ExitCodeCheck = ExitCode -> Either String ()
+{- | Create a 'TestTree' from a 'TestProcess'. Here is an example of how to use
+the function to create a test.
 
-type OutputCheck = String -> Either String ()
-
-data TestProcess = TestProcess
-  { process :: CreateProcess
-  , input :: Maybe String
-  , exitCodeCheck :: ExitCodeCheck
-  , stdoutCheck :: OutputCheck
-  , stderrCheck :: OutputCheck
-  }
-
-instance
-  IsTest
-    (TestProcess, IO (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle))
-  where
-  run _ (tp, io) _ = runTestProcess tp io
-
-  testOptions = return []
-
+@
+exampleTest :: TestTree
+exampleTest =
+  setTimeout (1 * second) $
+    processTest
+      "Simple test"
+      TestProcess
+        { process =
+          (proc "test-executable-simple" [])
+        , input = Nothing
+        , exitCodeCheck = ignored
+        , stdoutCheck = equals "Hello, world!\n"
+        , stderrCheck = ignored
+        }
+@
+-}
 processTest
   :: TestName
   -> TestProcess
@@ -66,6 +69,38 @@ processTest
       (createProcess process)
       cleanupProcess
       (\io -> singleTest testName (tp, io))
+
+{- | 'ExitCodeCheck' is a function that given the 'ExitCode' of a process,
+returns '()' if the exit code is expected, or a reason otherwise.
+-}
+type ExitCodeCheck = ExitCode -> Either String ()
+
+{- | 'OutputCheck' is a function that given the output of a process,
+returns '()' if the output is expected, or a reason otherwise.
+-}
+type OutputCheck = String -> Either String ()
+
+-- | 'TestProcess' is a data type that represents a process to be tested.
+data TestProcess = TestProcess
+  { process :: CreateProcess
+  -- ^ The process to be tested.
+  , input :: Maybe String
+  -- ^ The input to be sent to the process. If 'Nothing', no input will be sent.
+  , exitCodeCheck :: ExitCodeCheck
+  -- ^ The check to be performed on the exit code of the process.
+  , stdoutCheck :: OutputCheck
+  -- ^ The check to be performed on the @stdout@ of the process.
+  , stderrCheck :: OutputCheck
+  -- ^ The check to be performed on the @stderr@ of the process.
+  }
+
+instance
+  IsTest
+    (TestProcess, IO (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle))
+  where
+  run _ (tp, io) _ = runTestProcess tp io
+
+  testOptions = return []
 
 runTestProcess
   :: TestProcess
@@ -114,8 +149,9 @@ exitFailure CreateProcess {cmdspec} code stderr stdout reason =
       ++ "\nreason:\n"
       ++ reason
 
+-- | Set the timeout for a 'TestTree'.
 setTimeout :: Integer -> TestTree -> TestTree
-setTimeout x = adjustOption (const (mkTimeout x))
+setTimeout = localOption . mkTimeout
 
 class (Show a, Eq a) => EqualCheck a where
   equals :: a -> a -> Either String ()
@@ -135,3 +171,12 @@ class IgnoreCheck a where
 instance IgnoreCheck String
 
 instance IgnoreCheck ExitCode
+
+-- | Re-export of 'proc' from "System.Process" for more convenient default values.
+proc :: FilePath -> [String] -> CreateProcess
+proc x y =
+  (P.proc x y) {std_out = CreatePipe, std_err = CreatePipe, std_in = CreatePipe}
+
+-- | Re-export of 'shell' from "System.Process" for more convenient default values.
+shell :: String -> CreateProcess
+shell x = (P.shell x) {std_out = CreatePipe, std_err = CreatePipe, std_in = CreatePipe}
