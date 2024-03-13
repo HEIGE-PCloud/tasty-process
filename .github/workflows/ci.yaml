@@ -1,5 +1,10 @@
 name: CI
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   fourmolu:
@@ -15,27 +20,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        ghc-version: ["9.8", "9.6", "9.4"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        ghc-version:
+          [
+            "9.8",
+            "9.6",
+            "9.4",
+            "9.2",
+            "9.0",
+            "8.10",
+            "8.8",
+            "8.6",
+          ]
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up GHC ${{ matrix.ghc-version }}
-        uses: haskell-actions/setup@v2
-        id: setup
-        with:
-          ghc-version: ${{ matrix.ghc-version }}
-          enable-stack: true
-          stack-version: "latest"
-
-      - name: Cache dependencies
-        id: cache-dependencies
-        uses: actions/cache@v4
-        env:
-          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-stack-${{ steps.setup.outputs.stack-version }}
-        with:
-          path: ${{ steps.setup.outputs.stack-root }}
-          key: ${{ env.key }}-${{ hashFiles('tasty-process.cabal') }}
 
       - name: Build
         run: stack build --test --no-run-tests --compiler ghc-${{ matrix.ghc-version }}

@@ -1,18 +1,15 @@
-{- AUTOCOLLECT.TEST -}
-
-module Test
-  (
-  {- AUTOCOLLECT.TEST.export -}
-  )
-where
+module Test (allTests) where
 
 import System.Process (CreateProcess (..), StdStream (CreatePipe), proc)
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.ExpectedFailure (expectFailBecause)
 import Test.Tasty.Process
 
 second :: Integer
 second = 1000000
 
-test =
+simpleTest :: TestTree
+simpleTest =
   setTimeout (1 * second) $
     processTest
       "Simple test"
@@ -29,7 +26,8 @@ test =
         , stderrCheck = ignored
         }
 
-test =
+echoTest :: TestTree
+echoTest =
   setTimeout (1 * second) $
     processTest
       "Echo test"
@@ -46,19 +44,24 @@ test =
         , stderrCheck = ignored
         }
 
-test_expectFailBecause "Should timeout after 1 second" =
-  setTimeout (1 * second) $
-    processTest
-      "Infinite loop test"
-      TestProcess
-        { process =
-            (proc "test-executable-sleep" [])
-              { std_out = CreatePipe
-              , std_err = CreatePipe
-              , std_in = CreatePipe
-              }
-        , input = Nothing
-        , exitCodeCheck = ignored
-        , stdoutCheck = ignored
-        , stderrCheck = ignored
-        }
+timeoutTest :: TestTree
+timeoutTest =
+  expectFailBecause "Should timeout after 1s" $
+    setTimeout (1 * second) $
+      processTest
+        "Infinite loop test"
+        TestProcess
+          { process =
+              (proc "test-executable-sleep" [])
+                { std_out = CreatePipe
+                , std_err = CreatePipe
+                , std_in = CreatePipe
+                }
+          , input = Nothing
+          , exitCodeCheck = ignored
+          , stdoutCheck = ignored
+          , stderrCheck = ignored
+          }
+
+allTests :: TestTree
+allTests = testGroup "Test" [simpleTest, echoTest, timeoutTest]

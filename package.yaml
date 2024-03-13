@@ -50,13 +50,9 @@ tests:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
-      - -F
-      - -pgmF=tasty-autocollect
-    build-tools:
-      - tasty-autocollect:tasty-autocollect
     dependencies:
       - tasty-process
-      - tasty-autocollect
+      - tasty-expected-failure
 
 executables:
   test-executable-simple:
