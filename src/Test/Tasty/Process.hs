@@ -12,6 +12,7 @@ module Test.Tasty.Process
   , setTimeout
   , proc
   , shell
+  , defaultProcess
   )
 where
 
@@ -180,3 +181,13 @@ proc x y =
 -- | Re-export of 'shell' from "System.Process" for more convenient default values.
 shell :: String -> CreateProcess
 shell x = (P.shell x) {std_out = CreatePipe, std_err = CreatePipe, std_in = CreatePipe}
+
+defaultProcess :: TestProcess
+defaultProcess =
+  TestProcess
+    { process = undefined
+    , input = Nothing
+    , exitCodeCheck = ignored
+    , stdoutCheck = ignored
+    , stderrCheck = ignored
+    }
