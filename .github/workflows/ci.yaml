@@ -58,15 +58,15 @@ jobs:
           stack-version: "latest"
 
       - name: Haddock
-        run: stack haddock
+        run: cabal haddock tasty-process --enable-doc --haddock-hyperlink-source --haddock-quickjump --haddock-html-location='https://hackage.haskell.org/package/$pkg-$version/docs'
 
       - name: Prepare for deployment
-        run: cp -r ./$(find .stack-work -path '*/doc/html/tasty-process') site
+        run: cp -r ./$(find dist-newstyle -path '*/doc/html/tasty-process') site
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'site'
+          path: "site"
 
       - name: Deploy to GitHub Pages
         id: deployment
