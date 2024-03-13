@@ -38,23 +38,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # - name: Set up GHC ${{ matrix.ghc-version }}
-      #   uses: haskell-actions/setup@v2
-      #   id: setup
-      #   with:
-      #     ghc-version: ${{ matrix.ghc-version }}
-      #     enable-stack: true
-      #     stack-version: "latest"
-
-      - name: Cache dependencies
-        id: cache-dependencies
-        uses: actions/cache@v4
-        env:
-          key: ${{ runner.os }}-ghc-${{ steps.setup.outputs.ghc-version }}-stack-${{ steps.setup.outputs.stack-version }}
-        with:
-          path: ${{ steps.setup.outputs.stack-root }}
-          key: ${{ env.key }}-${{ hashFiles('tasty-process.cabal') }}
-
       - name: Build
         run: stack build --test --no-run-tests --compiler ghc-${{ matrix.ghc-version }}
 
