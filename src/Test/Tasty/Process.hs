@@ -8,24 +8,32 @@ module Test.Tasty.Process
   , OutputCheck
   , EqualCheck (..)
   , IgnoreCheck (..)
+  , processTest
+  , setTimeout
   )
 where
 
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (race)
 import Control.DeepSeq (deepseq)
 import Data.Foldable (for_)
 import Data.Maybe (fromMaybe)
-import GHC.IO.Handle (hClose, hFlush, hPutStr)
+import GHC.IO.Handle (Handle, hClose, hFlush, hPutStr)
 import System.Exit (ExitCode)
 import System.IO (hGetContents)
 import System.Process
   ( CreateProcess (CreateProcess, cmdspec)
+  , ProcessHandle
+  , cleanupProcess
   , createProcess
-  , terminateProcess
   , waitForProcess
   )
-import Test.Tasty.Providers (IsTest (..), Result, testFailed, testPassed)
+import Test.Tasty (TestName, TestTree, adjustOption, mkTimeout, withResource)
+import Test.Tasty.Providers
+  ( IsTest (..)
+  , Result
+  , singleTest
+  , testFailed
+  , testPassed
+  )
 
 type ExitCodeCheck = ExitCode -> Either String ()
 
@@ -37,15 +45,32 @@ data TestProcess = TestProcess
   , exitCodeCheck :: ExitCodeCheck
   , stdoutCheck :: OutputCheck
   , stderrCheck :: OutputCheck
-  , timeout :: Int
   }
 
-instance IsTest TestProcess where
-  run _ p _ = runTestProcess p
+instance
+  IsTest
+    (TestProcess, IO (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle))
+  where
+  run _ (tp, io) _ = runTestProcess tp io
 
   testOptions = return []
 
-runTestProcess :: TestProcess -> IO Result
+processTest
+  :: TestName
+  -> TestProcess
+  -> TestTree
+processTest
+  testName
+  tp@TestProcess {process} =
+    withResource
+      (createProcess process)
+      cleanupProcess
+      (\io -> singleTest testName (tp, io))
+
+runTestProcess
+  :: TestProcess
+  -> IO (Maybe Handle, Maybe Handle, Maybe Handle, ProcessHandle)
+  -> IO Result
 runTestProcess
   TestProcess
     { process
@@ -53,37 +78,26 @@ runTestProcess
     , exitCodeCheck
     , stdoutCheck
     , stderrCheck
-    , timeout
-    } = do
-    (mbStdinH, mbStdoutH, mbStderrH, ph) <- createProcess process
+    }
+  io = do
+    (mbStdinH, mbStdoutH, mbStderrH, ph) <- io
     for_ input $ \i -> do
       mapM_ (`hPutStr` i) mbStdinH
       mapM_ hFlush mbStdinH
       mapM_ hClose mbStdinH
-    let
-      processAction = do
-        stdout :: String <- fromMaybe "" <$> mapM hGetContents mbStdoutH
-        stderr :: String <- fromMaybe "" <$> mapM hGetContents mbStderrH
-        exitCode :: ExitCode <- stderr `deepseq` stdout `deepseq` waitForProcess ph
-        return (exitCode, stderr, stdout)
-    result <- race (threadDelay timeout) processAction
-    case result of
-      Left () -> do
-        terminateProcess ph
-        exitCode <- waitForProcess ph
-        return $ exitFailure process exitCode "" "" "process timeout"
-      Right (exitCode, stderr, stdout) -> do
-        let exitFailure' = exitFailure process exitCode stderr stdout
-        let exitCodeCheckResult = exitCodeCheck exitCode
-        let stderrCheckResult = stderrCheck stderr
-        let stdoutCheckResult = stdoutCheck stdout
-        let
-          res
-            | Left reason <- exitCodeCheckResult = exitFailure' reason
-            | Left reason <- stderrCheckResult = exitFailure' reason
-            | Left reason <- stdoutCheckResult = exitFailure' reason
-            | otherwise = testPassed ""
-        return res
+    stdout :: String <- fromMaybe "" <$> mapM hGetContents mbStdoutH
+    stderr :: String <- fromMaybe "" <$> mapM hGetContents mbStderrH
+    exitCode :: ExitCode <- stderr `deepseq` stdout `deepseq` waitForProcess ph
+    let exitFailure' = exitFailure process exitCode stderr stdout
+    let exitCodeCheckResult = exitCodeCheck exitCode
+    let stderrCheckResult = stderrCheck stderr
+    let stdoutCheckResult = stdoutCheck stdout
+    let res
+          | Left reason <- exitCodeCheckResult = exitFailure' reason
+          | Left reason <- stderrCheckResult = exitFailure' reason
+          | Left reason <- stdoutCheckResult = exitFailure' reason
+          | otherwise = testPassed ""
+    return res
 
 exitFailure
   :: CreateProcess -> ExitCode -> String -> String -> String -> Result
@@ -99,6 +113,9 @@ exitFailure CreateProcess {cmdspec} code stderr stdout reason =
       ++ stdout
       ++ "\nreason:\n"
       ++ reason
+
+setTimeout :: Integer -> TestTree -> TestTree
+setTimeout x = adjustOption (const (mkTimeout x))
 
 class (Show a, Eq a) => EqualCheck a where
   equals :: a -> a -> Either String ()

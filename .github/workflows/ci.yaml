@@ -1,5 +1,5 @@
 name: CI
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 
 jobs:
   fourmolu:
@@ -27,7 +27,47 @@ jobs:
           ghc-version: ${{ matrix.ghc-version }}
           enable-stack: true
           stack-version: "latest"
+
       - name: Build
         run: stack build --test --no-run-tests --compiler ghc-${{ matrix.ghc-version }}
+
       - name: Test
         run: stack test --compiler ghc-${{ matrix.ghc-version }}
+
+  haddock:
+    # Only run on pushes to main
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+    name: Haddock
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up GHC 9.4
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.4"
+          enable-stack: true
+          stack-version: "latest"
+
+      - name: Haddock
+        run: stack haddock
+
+      - name: Prepare for deployment
+        run: cp -r ./$(find .stack-work -path '*/doc/html/tasty-process') site
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
