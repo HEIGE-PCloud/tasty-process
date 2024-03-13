@@ -1,6 +1,6 @@
 module Test (allTests) where
 
-import System.Process (CreateProcess (..), StdStream (CreatePipe), proc)
+import System.Process (CreateProcess (..), StdStream (CreatePipe))
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.ExpectedFailure (expectFailBecause)
 import Test.Tasty.Process
