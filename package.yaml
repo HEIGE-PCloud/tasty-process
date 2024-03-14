@@ -48,6 +48,12 @@ tests:
     dependencies:
       - tasty-process
       - tasty-expected-failure
+    build-tool-depends:
+      - test-executable-echo
+      - test-executable-exitcode
+      - test-executable-simple
+      - test-executable-sleep
+    
 
 executables:
   test-executable-simple:
