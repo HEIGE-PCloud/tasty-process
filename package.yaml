@@ -6,27 +6,22 @@ author: "PCloud"
 maintainer: "heige.pcloud@outlook.com"
 copyright: "(c) 2024 PCloud"
 category: Testing
-synopsis: Use Tasty to test execution of external processes
+synopsis: Test execution of external processes with Tasty
 
 extra-source-files:
   - README.md
   - CHANGELOG.md
 
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
-
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
 description: Please see the README on GitHub at <https://github.com/HEIGE-PCloud/tasty-process#readme>
+
+pvp-bounds: both
 
 dependencies:
   - base >= 4.7 && < 5
-  - tasty
-  - process
-  - deepseq
-  - async
+  - tasty >= 1.4 && < 1.6
+  - process >= 1.6.18 && < 1.7
+  - deepseq >= 1.4.8 && < 1.5
+  - async >= 2.2.5 && < 2.3
 
 ghc-options:
   - -Wall

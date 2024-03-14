@@ -6,7 +6,7 @@ cabal-version: 1.12
 
 name:           tasty-process
 version:        0.1.0.0
-synopsis:       Use Tasty to test execution of external processes
+synopsis:       Test execution of external processes with Tasty
 description:    Please see the README on GitHub at <https://github.com/HEIGE-PCloud/tasty-process#readme>
 category:       Testing
 homepage:       https://github.com/HEIGE-PCloud/tasty-process#readme
@@ -34,11 +34,11 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      async
+      async >=2.2.5 && <2.3
     , base >=4.7 && <5
-    , deepseq
-    , process
-    , tasty
+    , deepseq >=1.4.8 && <1.5
+    , process >=1.6.18 && <1.7
+    , tasty >=1.4 && <1.6
   default-language: Haskell2010
 
 executable test-executable-echo
@@ -49,11 +49,11 @@ executable test-executable-echo
       test/executables/echo
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      async
+      async >=2.2.5 && <2.3
     , base >=4.7 && <5
-    , deepseq
-    , process
-    , tasty
+    , deepseq >=1.4.8 && <1.5
+    , process >=1.6.18 && <1.7
+    , tasty >=1.4 && <1.6
     , tasty-process
   default-language: Haskell2010
 
@@ -65,11 +65,11 @@ executable test-executable-exitcode
       test/executables/exitcode
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      async
+      async >=2.2.5 && <2.3
     , base >=4.7 && <5
-    , deepseq
-    , process
-    , tasty
+    , deepseq >=1.4.8 && <1.5
+    , process >=1.6.18 && <1.7
+    , tasty >=1.4 && <1.6
     , tasty-process
   default-language: Haskell2010
 
@@ -81,11 +81,11 @@ executable test-executable-simple
       test/executables/simple
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      async
+      async >=2.2.5 && <2.3
     , base >=4.7 && <5
-    , deepseq
-    , process
-    , tasty
+    , deepseq >=1.4.8 && <1.5
+    , process >=1.6.18 && <1.7
+    , tasty >=1.4 && <1.6
     , tasty-process
   default-language: Haskell2010
 
@@ -97,11 +97,11 @@ executable test-executable-sleep
       test/executables/sleep
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      async
+      async >=2.2.5 && <2.3
     , base >=4.7 && <5
-    , deepseq
-    , process
-    , tasty
+    , deepseq >=1.4.8 && <1.5
+    , process >=1.6.18 && <1.7
+    , tasty >=1.4 && <1.6
     , tasty-process
   default-language: Haskell2010
 
@@ -115,11 +115,11 @@ test-suite tasty-process-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      async
+      async >=2.2.5 && <2.3
     , base >=4.7 && <5
-    , deepseq
-    , process
-    , tasty
+    , deepseq >=1.4.8 && <1.5
+    , process >=1.6.18 && <1.7
+    , tasty >=1.4 && <1.6
     , tasty-expected-failure
     , tasty-process
   default-language: Haskell2010
