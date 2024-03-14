@@ -13,10 +13,48 @@ simpleTest =
   setTimeout (1 * second) $
     processTest
       "Simple test"
+      TestProcess
+        { process = proc "test-executable-simple" []
+        , input = Nothing
+        , stdoutCheck = equals "Hello, world!\n"
+        , stderrCheck = equals "Hello, stderr!\n"
+        , exitCodeCheck = equals ExitSuccess
+        }
+
+simpleShellTest :: TestTree
+simpleShellTest =
+  setTimeout (1 * second) $
+    processTest
+      "Simple shell test"
+      TestProcess
+        { process = shell "echo hello"
+        , input = Nothing
+        , stdoutCheck = equals "hello\n"
+        , stderrCheck = equals ""
+        , exitCodeCheck = equals ExitSuccess
+        }
+
+failedStdoutTest :: TestTree
+failedStdoutTest =
+  expectFailBecause "Expected failed" $
+    processTest
+      "Failed stdout test"
+      defaultProcess
+        { process = proc "test-executable-simple" []
+        , stdoutCheck = equals "Hello world!\n"
+        , stderrCheck = equals "Hello, stderr!\n"
+        , exitCodeCheck = equals ExitSuccess
+        }
+
+failedStderrTest :: TestTree
+failedStderrTest =
+  expectFailBecause "Expected failed" $
+    processTest
+      "Failed stderr test"
       defaultProcess
         { process = proc "test-executable-simple" []
         , stdoutCheck = equals "Hello, world!\n"
-        , stderrCheck = equals "Hello, stderr!\n"
+        , stderrCheck = equals "Hello stderr!\n"
         , exitCodeCheck = equals ExitSuccess
         }
 
@@ -76,6 +114,9 @@ allTests =
   testGroup
     "Test"
     [ simpleTest
+    , simpleShellTest
+    , failedStdoutTest
+    , failedStderrTest
     , echoTest
     , failedEchoTest
     , exitCodeTest
