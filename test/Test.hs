@@ -1,6 +1,6 @@
 module Test (allTests) where
 
-import System.Exit (ExitCode (ExitFailure))
+import System.Exit (ExitCode (..))
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.ExpectedFailure (expectFailBecause)
 import Test.Tasty.Process
@@ -16,6 +16,8 @@ simpleTest =
       defaultProcess
         { process = proc "test-executable-simple" []
         , stdoutCheck = equals "Hello, world!\n"
+        , stderrCheck = equals "Hello, stderr!\n"
+        , exitCodeCheck = equals ExitSuccess
         }
 
 echoTest :: TestTree
