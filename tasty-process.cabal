@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           tasty-process
-version:        0.1.0.0
+version:        0.1.0.1
 synopsis:       Test execution of external processes with Tasty
 description:    Please see the README on GitHub at <https://github.com/HEIGE-PCloud/tasty-process#readme>
 category:       Testing
